@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>완료 · Anti-DeepVoice</title>
+    <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+
+<body>
+    <header>
+        <div class="container nav">
+            <a class="brand" href="./index.html" aria-label="홈으로">
+                <div class="logo" aria-hidden="true"></div>
+                <div>Anti-DeepVoice</div>
+            </a>
+            <div class="spacer"></div>
+            <a id="nav-home" href="./index.html">홈</a>
+            <a id="nav-auth" href="./auth.html">로그인/회원가입</a>
+            <a id="nav-upload" href="./upload.html">업로드</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="grid">
+            <div class="card">
+                <h2 id="done-title">완료</h2>
+                <div id="done-summary" class="kvs" style="margin-top:6px"></div>
+                <div class="row" style="margin-top:12px">
+                    <a id="result-link" class="btn" href="#" download>결과 JSON 다운로드</a>
+                    <a class="btn secondary" href="./upload.html">다른 파일 처리</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>다음 단계</h2>
+                <ul class="muted">
+                    <li>실서비스 연동 시: 서버로 파일 전송 → 비동기 작업 → 콜백/웹훅으로 결과 수신</li>
+                    <li>키 관리는 HSM/비밀 관리 서비스와 통합 권장</li>
+                    <li>검증 SDK를 모바일·웹 플레이어에 내장하여 재생 시 자동 검출 가능</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer class="container">© 2025 Anti-DeepVoice Demo</footer>
+    <script src="./assets/app.js"></script>
+    <script>
+        const U = ADV_UTILS;
+        const meta = JSON.parse(localStorage.getItem('ADV_FILE_META') || 'null');
+        const opts = JSON.parse(localStorage.getItem('ADV_OPTS') || 'null');
+
+        const summary = document.getElementById('done-summary');
+        const resultLink = document.getElementById('result-link');
+
+        if (!meta || !opts) {
+            summary.innerHTML = '<div class="kv"><span>오류</span><code>이전 단계 정보가 없습니다. 업로드부터 다시 진행하십시오.</code></div>';
+        } else {
+            const now = new Date().toISOString();
+            const task = opts.task;
+            const key = task === 'embed' ? (opts.key || '') : (opts.vkey || '');
+            const conf = (task === 'verify') ? pseudoConfidence(meta.name + key) : undefined;
+            const token = U.tokenFrom(meta.name + key + now);
+
+            const rows = [];
+            // 쉬운 표현으로 결과 라벨 변경
+            rows.push(kv('처리 방법', task === 'embed' ? '워터마크 넣기' : '워터마크 확인'));
+            rows.push(kv('파일 이름', meta.name));
+            if (task === 'embed') {
+                rows.push(kv('적용 강도', String(opts.strength)));
+                rows.push(kv('안정성 모드', opts.robust ? '사용' : '미사용'));
+                rows.push(kv('보안 번호', U.hash32(opts.key || '')));
+                rows.push(kv('처리 결과', '워터마크가 성공적으로 적용되었습니다.'));
+            } else {
+                rows.push(kv('키 입력 여부', key ? '예' : '아니오'));
+                rows.push(kv('검출 확률', (conf * 100).toFixed(1) + '%'));
+                rows.push(kv('검출 결과', conf > 0.6 ? '워터마크 발견됨' : '워터마크 없음'));
+            }
+            rows.push(kv('확인 코드', token));
+            summary.innerHTML = rows.join('');
+
+            const result = {
+                mode: task, file: meta,
+                options: task === 'embed' ?
+                    { strength: opts.strength, robust: opts.robust, key_hash: U.hash32(opts.key || '') } :
+                    { key_provided: !!(opts.vkey) },
+                verification: task === 'verify' ? { confidence: conf, detected: conf > 0.6 } : null,
+                token, timestamp: now
+            };
+            const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            resultLink.href = url;
+            resultLink.download = `adv_result_${Date.now()}.json`;
+        }
+
+        function kv(k, v) { return `<div class="kv"><span>${k}</span><code>${v}</code></div>` }
+        function pseudoConfidence(s) {
+            const h = Math.abs(U.hash32(s).split('').reduce((a, c) => a + c.charCodeAt(0), 0));
+            return ((h % 40) + 55) / 100; // 0.55~0.94
+        }
+    </script>
+</body>
+
+</html>

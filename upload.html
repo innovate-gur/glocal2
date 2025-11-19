@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>업로드 · Anti-DeepVoice</title>
+    <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+
+<body>
+    <header>
+        <div class="container nav">
+            <a class="brand" href="./index.html" aria-label="홈으로">
+                <div class="logo" aria-hidden="true"></div>
+                <div>Anti-DeepVoice</div>
+            </a>
+            <div class="spacer"></div>
+            <a id="nav-home" href="./index.html">홈</a>
+            <a id="nav-auth" href="./auth.html">로그인/회원가입</a>
+            <a id="nav-upload" class="active" href="./upload.html">업로드</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="grid">
+            <div class="card">
+                <h2>오디오 업로드</h2>
+                <div id="drop" class="drop" tabindex="0">
+                    <div>파일을 여기에 드래그하거나, 아래에서 선택하십시오.</div>
+                    <small class="muted">지원: WAV, MP3, M4A, OGG, FLAC, WebM</small>
+                    <input id="file" type="file" accept="audio/*" class="hidden" />
+                    <div class="row" style="margin-top:8px">
+                        <button class="btn secondary" type="button" onclick="document.getElementById('file').click()">파일
+                            선택</button>
+                        <button id="btn-clear" class="btn ghost" type="button" onclick="clearFile()"
+                            disabled>초기화</button>
+                    </div>
+                </div>
+                <div id="file-info" class="kvs hidden" style="margin-top:12px"></div>
+            </div>
+
+            <div class="card">
+                <h2>작업 설정</h2>
+                <div class="field">
+                    <label>작업 유형</label>
+                    <div class="row">
+                        <label><input type="radio" name="task" value="embed" checked onchange="setTask(this.value)" />
+                            워터마크 삽입</label>
+                        <label><input type="radio" name="task" value="verify" onchange="setTask(this.value)" /> 워터마크
+                            검증</label>
+                    </div>
+                </div>
+
+                <div id="embed-opts" class="field" style="margin-top:10px">
+                    <label for="strength">워터마킹 강도</label>
+                    <input id="strength" type="range" min="1" max="10" value="6" />
+                    <small class="muted">값이 높을수록 검출에는 유리하나 음질 영향 가능성이 커집니다.</small>
+
+                    <label for="key">키(Seed)</label>
+                    <input id="key" class="input" type="text" placeholder="예: team-project-key" />
+                    <label><input id="robust" type="checkbox" /> 견고 모드(노이즈·압축 대비)</label>
+                </div>
+
+                <div id="verify-opts" class="field hidden" style="margin-top:10px">
+                    <label for="vkey">키(선택)</label>
+                    <input id="vkey" class="input" type="text" placeholder="모를 경우 비워두십시오" />
+                    <small class="muted">키가 없을 경우, 일반 검출 절차를 사용합니다.</small>
+                </div>
+
+                <div class="row" style="margin-top:12px">
+                    <button id="btn-start" class="btn" onclick="startProcess()" disabled>시작</button>
+                    <a class="btn ghost" href="./index.html">홈으로</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="container">© 2025 Anti-DeepVoice Demo</footer>
+    <script src="./assets/app.js"></script>
+    <script>
+        const U = ADV_UTILS;
+
+        // 드래그/드롭
+        const drop = document.getElementById('drop');
+        const fileInput = document.getElementById('file');
+        const fileInfo = document.getElementById('file-info');
+        const btnStart = document.getElementById('btn-start');
+        const btnClear = document.getElementById('btn-clear');
+
+        ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag') }));
+        ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag') }));
+        drop.addEventListener('drop', e => { const f = e.dataTransfer.files?.[0]; if (f) setFile(f) });
+        fileInput.addEventListener('change', e => { const f = e.target.files?.[0]; if (f) setFile(f) });
+
+        function clearFile() {
+            localStorage.removeItem('ADV_FILE_META');
+            btnStart.disabled = true; btnClear.disabled = true;
+            fileInfo.classList.add('hidden'); fileInfo.innerHTML = '';
+            fileInput.value = '';
+        }
+
+        function setFile(file) {
+            if (!file || !file.type.startsWith('audio/')) { alert('오디오 파일을 선택하십시오.'); return; }
+            btnStart.disabled = false; btnClear.disabled = false;
+
+            // 메타만 저장(파일 자체는 업로드하지 않음 / 데모)
+            const url = URL.createObjectURL(file);
+            const audio = new Audio(); audio.preload = 'metadata'; audio.src = url;
+            audio.onloadedmetadata = () => {
+                const meta = { name: file.name, type: file.type, size: file.size, duration: isFinite(audio.duration) ? audio.duration : 0 };
+                localStorage.setItem('ADV_FILE_META', JSON.stringify(meta));
+                renderFileInfo(meta);
+                URL.revokeObjectURL(url);
+            };
+            audio.onerror = () => {
+                const meta = { name: file.name, type: file.type, size: file.size, duration: 0 };
+                localStorage.setItem('ADV_FILE_META', JSON.stringify(meta));
+                renderFileInfo(meta);
+                URL.revokeObjectURL(url);
+            };
+        }
+
+        function renderFileInfo(meta) {
+            const rows = [];
+            rows.push(kv('파일명', meta.name));
+            rows.push(kv('형식', meta.type || '알 수 없음'));
+            rows.push(kv('크기', human(meta.size)));
+            if (meta.duration) rows.push(kv('재생 길이', timefmt(meta.duration)));
+            fileInfo.innerHTML = rows.join('');
+            fileInfo.classList.remove('hidden');
+        }
+
+        function kv(k, v) { return `<div class="kv"><span>${k}</span><code>${v}</code></div>` }
+        function human(bytes) { const u = ['B', 'KB', 'MB', 'GB']; let i = 0, n = bytes; while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; } return `${n.toFixed(i === 0 ? 0 : 1)} ${u[i]}`; }
+        function timefmt(sec) { const m = Math.floor(sec / 60), s = Math.round(sec % 60); return `${m}분 ${s}초`; }
+
+        function setTask(t) {
+            localStorage.setItem('ADV_TASK', t);
+            document.getElementById('embed-opts').classList.toggle('hidden', t !== 'embed');
+            document.getElementById('verify-opts').classList.toggle('hidden', t !== 'verify');
+        }
+        setTask('embed');
+
+        function startProcess() {
+            const meta = JSON.parse(localStorage.getItem('ADV_FILE_META') || 'null');
+            if (!meta) { alert('파일을 먼저 선택하십시오.'); return; }
+
+            const task = document.querySelector('input[name=\"task\"]:checked').value;
+            const strength = Number(document.getElementById('strength').value || 6);
+            const robust = !!document.getElementById('robust').checked;
+            const key = document.getElementById('key').value || '';
+            const vkey = document.getElementById('vkey').value || '';
+
+            localStorage.setItem('ADV_OPTS', JSON.stringify({ task, strength, robust, key, vkey }));
+            U.go('./loading.html');
+        }
+    </script>
+</body>
+
+</html>

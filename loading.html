@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>처리 중… · Anti-DeepVoice</title>
+    <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+
+<body>
+    <header>
+        <div class="container nav">
+            <a class="brand" href="./index.html" aria-label="홈으로">
+                <div class="logo" aria-hidden="true"></div>
+                <div>Anti-DeepVoice</div>
+            </a>
+            <div class="spacer"></div>
+            <a id="nav-home" href="./index.html">홈</a>
+            <a id="nav-auth" href="./auth.html">로그인/회원가입</a>
+            <a id="nav-upload" href="./upload.html">업로드</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card">
+            <h2>처리 중입니다…</h2>
+            <p class="muted" id="loading-msg">오디오 전처리 수행 중입니다.</p>
+            <div class="progress" style="margin-top:10px"><span id="bar"></span></div>
+        </div>
+    </main>
+
+    <footer class="container">© 2025 Anti-DeepVoice Demo</footer>
+    <script src="./assets/app.js"></script>
+    <script>
+        const msgs = [
+            '오디오 전처리 수행 중입니다.',
+            '워터마크 신호 처리 중입니다.',
+            '후처리 및 요약을 생성하고 있습니다.'
+        ];
+        let step = 0, p = 0;
+        const bar = document.getElementById('bar');
+        const msg = document.getElementById('loading-msg');
+        msg.textContent = msgs[0];
+
+        const t = setInterval(() => {
+            p += Math.random() * 18 + 7; if (p > 100) p = 100; bar.style.width = p + '%';
+            if (p > (35 + step * 25) && step < msgs.length - 1) { step++; msg.textContent = msgs[step]; }
+            if (p >= 100) { clearInterval(t); setTimeout(() => location.href = './done.html', 350); }
+        }, 260);
+    </script>
+</body>
+
+</html>

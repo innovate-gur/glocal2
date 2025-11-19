@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Anti‑DeepVoice 오디오 워터마킹 데모</title>
+  <meta name="description" content="딥보이스 방지를 위한 오디오 워터마킹·검증 데모 웹앱" />
+  <style>
+    :root {
+      --bg: #0e1116;
+      --panel: #141824;
+      --muted: #8a90a0;
+      --text: #e9edf1;
+      --accent: #6aa7ff;
+      --accent2: #74f9c7;
+      --danger: #ff6a86;
+      --card: #121725cc;
+      --border: 1px solid rgba(255, 255, 255, .08);
+      --ring: 0 0 0 3px rgba(116, 249, 199, .25);
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Apple SD Gothic Neo, Arial, 'Noto Sans KR', '맑은 고딕', sans-serif;
+      background:
+        radial-gradient(1200px 800px at 5% 0%, #1a2030 0%, rgba(26, 32, 48, 0) 60%),
+        radial-gradient(900px 600px at 100% 0%, #0d2a3a 0%, rgba(13, 42, 58, 0) 55%),
+        linear-gradient(180deg, #0b0f1a 0%, #0e1116 100%);
+      color: var(--text)
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: saturate(140%) blur(10px);
+      background: linear-gradient(180deg, rgba(18, 23, 37, .85), rgba(18, 23, 37, .55));
+      border-bottom: var(--border)
+    }
+
+    .container {
+      max-width: 1080px;
+      padding: 0 20px;
+      margin: 0 auto
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700
+    }
+
+    .brand .logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 6px 24px rgba(116, 249, 199, .25)
+    }
+
+    .nav .spacer {
+      flex: 1
+    }
+
+    .nav a,
+    .nav button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-weight: 500;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer
+    }
+
+    .nav a.active,
+    .nav button.active,
+    .nav a:hover,
+    .nav button:hover {
+      background: #ffffff10
+    }
+
+    main {
+      padding: 28px 0 80px
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px
+    }
+
+    @media(min-width:880px) {
+      .grid {
+        grid-template-columns: 1.1fr .9fr
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, .25)
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 20px
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    .hero {
+      display: grid;
+      gap: 18px;
+      padding: 26px;
+      background: linear-gradient(180deg, rgba(106, 167, 255, .08), rgba(116, 249, 199, .05));
+      border: var(--border);
+      border-radius: 18px
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.25
+    }
+
+    .hero p {
+      margin: 0;
+      color: #c9ced9
+    }
+
+    .btn {
+      appearance: none;
+      border: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0b1117;
+      font-weight: 700;
+      padding: 12px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 30px rgba(116, 249, 199, .25)
+    }
+
+    .btn.secondary {
+      background: #ffffff14;
+      color: var(--text);
+      box-shadow: none;
+      border: var(--border)
+    }
+
+    .btn.ghost {
+      background: transparent;
+      border: var(--border);
+      color: var(--text)
+    }
+
+    .btn:focus {
+      outline: none;
+      box-shadow: var(--ring)
+    }
+
+    .btn[disabled] {
+      opacity: .6;
+      cursor: not-allowed
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .field {
+      display: grid;
+      gap: 6px
+    }
+
+    .field label {
+      font-size: .9rem;
+      color: #c9ced9
+    }
+
+    .input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 10px;
+      border: var(--border);
+      background: #0c111b;
+      color: var(--text)
+    }
+
+    .input:focus {
+      outline: none;
+      box-shadow: var(--ring)
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px
+    }
+
+    .tab {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: var(--border);
+      background: #0c111b;
+      cursor: pointer
+    }
+
+    .tab.active {
+      background: #172134
+    }
+
+    .drop {
+      display: grid;
+      justify-items: center;
+      align-content: center;
+      gap: 10px;
+      padding: 36px;
+      border-radius: 16px;
+      border: 2px dashed #2a3244;
+      background: #0c111b;
+      text-align: center
+    }
+
+    .drop.drag {
+      border-color: var(--accent)
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    .progress {
+      height: 14px;
+      background: #0c111b;
+      border-radius: 999px;
+      border: var(--border);
+      overflow: hidden
+    }
+
+    .progress>span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .3s ease
+    }
+
+    .kvs {
+      display: grid;
+      gap: 10px
+    }
+
+    .kv {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #0c111b;
+      border: var(--border);
+      font-family: ui-monospace, Menlo, Consolas, monospace
+    }
+
+    .kv code {
+      color: #c9eafd
+    }
+
+    footer {
+      color: #9aa3b2;
+      font-size: .9rem;
+      padding: 24px 0;
+      border-top: var(--border)
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="container nav">
+      <a class="brand" href="./index.html" aria-label="홈으로">
+        <div class="logo" aria-hidden="true"></div>
+        <div>Anti‑DeepVoice</div>
+      </a>
+      <div class="spacer"></div>
+      <a id="nav-home" class="active" href="./index.html">홈</a>
+      <a id="nav-auth" href="./auth.html">로그인/회원가입</a>
+      <a id="nav-upload" href="./upload.html">업로드</a>
+      <a id="nav-live" href="./live.html">라이브</a> <!-- 추가 -->
+      <button id="nav-account" class="secondary hidden" onclick="logout()">로그아웃</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- HOME -->
+    <section id="view-home" class="view">
+      <div class="hero">
+        <!-- 변경된 쉬운 제목과 설명 -->
+        <h1>쉽고 간단한 오디오 워터마크 체험</h1>
+        <p>복잡한 기술 용어 없이 누구나 쉽게 이용할 수 있습니다.</p>
+        <div class="row" style="margin-top:6px; justify-content: center;">
+          <button class="btn large" onclick="navigate('view-upload')">바로 체험</button>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:18px">
+        <div class="card">
+          <h2>기능 개요</h2>
+          <ul class="muted">
+            <li>오디오 파일에 <strong>워터마크 삽입</strong> 또는 <strong>검증</strong> 진행</li>
+            <li>처리 중 <strong>Loading…</strong> 상태 표시 및 <strong>결과 화면</strong> 제공</li>
+            <li>브라우저 내 데모로 동작하며 서버 연결 없이 체험 가능</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>주의 사항</h2>
+          <p class="muted">본 데모는 실제 보안 강도를 보장하지 않으며, 실제 적용 시 서버·모델 연동 및 암호학적 키 관리가 필요합니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTH -->
+    <section id="view-auth" class="view hidden" aria-labelledby="auth-title">
+      <div class="grid">
+        <div class="card">
+          <h2 id="auth-title">계정</h2>
+          <div class="tabs" role="tablist">
+            <div id="tab-login" class="tab active" role="tab" aria-selected="true" aria-controls="panel-login"
+              tabindex="0" onclick="switchAuth('login')">로그인</div>
+            <div id="tab-sign" class="tab" role="tab" aria-selected="false" aria-controls="panel-sign" tabindex="0"
+              onclick="switchAuth('sign')">회원가입</div>
+          </div>
+
+          <form id="panel-login" class="field" onsubmit="doLogin(event)">
+            <label for="login-email">이메일</label>
+            <input id="login-email" class="input" type="email" placeholder="you@example.com" required />
+            <label for="login-pass">비밀번호</label>
+            <input id="login-pass" class="input" type="password" placeholder="••••••••" minlength="6" required />
+            <div class="row" style="margin-top:6px">
+              <button class="btn" type="submit">로그인</button>
+              <button class="btn ghost" type="button" onclick="navigate('view-home')">취소</button>
+            </div>
+          </form>
+
+          <form id="panel-sign" class="field hidden" onsubmit="doSignup(event)">
+            <label for="sign-name">이름</label>
+            <input id="sign-name" class="input" type="text" placeholder="홍길동" required />
+            <label for="sign-email">이메일</label>
+            <input id="sign-email" class="input" type="email" placeholder="you@example.com" required />
+            <label for="sign-pass">비밀번호</label>
+            <input id="sign-pass" class="input" type="password" placeholder="최소 6자" minlength="6" required />
+            <div class="row" style="margin-top:6px">
+              <button class="btn" type="submit">회원가입</button>
+              <button class="btn ghost" type="button" onclick="switchAuth('login')">로그인으로</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>보안 권고</h2>
+          <p class="muted">실서비스에서는 OAuth·이중 인증·세션 토큰 서명 등을 적용해야 합니다. 본 데모의 인증은 로컬 상태 전환만 수행합니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- UPLOAD / TASK -->
+    <section id="view-upload" class="view hidden" aria-labelledby="upload-title">
+      <div class="grid">
+        <div class="card">
+          <h2 id="upload-title">오디오 업로드</h2>
+          <div id="drop" class="drop" tabindex="0">
+            <div>파일을 여기에 드래그하거나, 아래에서 선택하십시오.</div>
+            <small class="muted">지원: WAV, MP3, M4A, OGG, FLAC, WebM</small>
+            <input id="file" type="file" accept="audio/*" class="hidden" />
+            <div class="row" style="margin-top:8px">
+              <button class="btn secondary" type="button" onclick="document.getElementById('file').click()">파일
+                선택</button>
+              <button id="btn-clear" class="btn ghost" type="button" onclick="clearFile()" disabled>초기화</button>
+            </div>
+          </div>
+
+          <div id="file-info" class="kvs hidden" style="margin-top:12px"></div>
+        </div>
+
+        <div class="card">
+          <h2>작업 설정</h2>
+          <div class="field">
+            <label>작업 유형</label>
+            <div class="row">
+              <label><input type="radio" name="task" value="embed" checked onchange="setTask(this.value)" /> 워터마크
+                삽입</label>
+              <label><input type="radio" name="task" value="verify" onchange="setTask(this.value)" /> 워터마크 검증</label>
+            </div>
+          </div>
+
+          <div id="embed-opts" class="field" style="margin-top:10px">
+            <label for="strength">워터마킹 강도</label>
+            <input id="strength" type="range" min="1" max="10" value="6" />
+            <small class="muted">값이 높을수록 검출에는 유리하나 음질 영향 가능성이 커집니다.</small>
+
+            <label for="key">키(Seed)</label>
+            <input id="key" class="input" type="text" placeholder="예: team‑project‑key" />
+            <label><input id="robust" type="checkbox" /> 견고 모드(노이즈·압축 대비)</label>
+          </div>
+
+          <div id="verify-opts" class="field hidden" style="margin-top:10px">
+            <label for="vkey">키(선택)</label>
+            <input id="vkey" class="input" type="text" placeholder="모를 경우 비워두십시오" />
+            <small class="muted">키가 없을 경우, 일반 검출 절차를 사용합니다.</small>
+          </div>
+
+          <div class="row" style="margin-top:12px">
+            <button id="btn-start" class="btn" onclick="startProcess()" disabled>시작</button>
+            <button class="btn ghost" onclick="navigate('view-home')">홈으로</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOADING -->
+    <section id="view-loading" class="view hidden" aria-live="polite">
+      <div class="card">
+        <h2>처리 중입니다…</h2>
+        <p class="muted" id="loading-msg">오디오 전처리 수행 중입니다.</p>
+        <div class="progress" style="margin-top:10px"><span id="bar"></span></div>
+      </div>
+    </section>
+
+    <!-- DONE -->
+    <section id="view-done" class="view hidden">
+      <div class="grid">
+        <div class="card">
+          <h2 id="done-title">완료</h2>
+          <div id="done-summary" class="kvs" style="margin-top:6px"></div>
+          <div class="row" style="margin-top:12px">
+            <a id="result-link" class="btn" href="#" download>결과 JSON 다운로드</a>
+            <button class="btn secondary" onclick="navigate('view-upload')">다른 파일 처리</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>다음 단계</h2>
+          <ul class="muted">
+            <li>실서비스 연동 시: 서버로 파일 전송 → 비동기 작업 → 콜백/웹훅으로 결과 수신</li>
+            <li>키 관리는 HSM/비밀 관리 서비스와 통합 권장</li>
+            <li>검증 SDK를 모바일·웹 플레이어에 내장하여 재생 시 자동 검출 가능</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container">
+    © 2025 Anti‑DeepVoice Demo · 본 페이지는 데모이며 실제 보안을 보장하지 않습니다.
+  </footer>
+
+  <script>
+    // ---------- Global State ----------
+    const state = {
+      isLoggedIn: false,
+      task: 'embed',
+      file: null,
+      audioMeta: null,
+      lastResultUrl: null,
+    };
+
+    // ---------- Navigation ----------
+    function navigate(id) {
+      for (const el of document.querySelectorAll('.view')) el.classList.add('hidden');
+      document.getElementById(id).classList.remove('hidden');
+      document.getElementById('nav-home').classList.toggle('active', id === 'view-home');
+      document.getElementById('nav-auth').classList.toggle('active', id === 'view-auth');
+      document.getElementById('nav-upload').classList.toggle('active', id === 'view-upload');
+      if (id === 'view-home') document.getElementById('view-home').classList.remove('hidden');
+    }
+
+    function logout() {
+      state.isLoggedIn = false;
+      document.getElementById('nav-account').classList.add('hidden');
+      navigate('view-home');
+    }
+
+    // ---------- Auth Tabs ----------
+    function switchAuth(which) {
+      const isLogin = which === 'login';
+      document.getElementById('tab-login').classList.toggle('active', isLogin);
+      document.getElementById('tab-sign').classList.toggle('active', !isLogin);
+      document.getElementById('panel-login').classList.toggle('hidden', !isLogin);
+      document.getElementById('panel-sign').classList.toggle('hidden', isLogin);
+    }
+
+    function doLogin(e) {
+      e.preventDefault();
+      state.isLoggedIn = true;
+      document.getElementById('nav-account').classList.remove('hidden');
+      navigate('view-upload');
+    }
+
+    function doSignup(e) {
+      e.preventDefault();
+      state.isLoggedIn = true;
+      document.getElementById('nav-account').classList.remove('hidden');
+      navigate('view-upload');
+    }
+
+    // ---------- Upload ----------
+    const drop = document.getElementById('drop');
+    const fileInput = document.getElementById('file');
+    const fileInfo = document.getElementById('file-info');
+    const btnStart = document.getElementById('btn-start');
+    const btnClear = document.getElementById('btn-clear');
+
+    ;['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag') }));
+    ;['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag') }));
+    drop.addEventListener('drop', e => { const f = e.dataTransfer.files?.[0]; if (f) setFile(f) });
+    fileInput.addEventListener('change', e => { const f = e.target.files?.[0]; if (f) setFile(f) });
+
+    function clearFile() {
+      state.file = null; state.audioMeta = null; fileInput.value = '';
+      fileInfo.classList.add('hidden'); fileInfo.innerHTML = '';
+      btnStart.disabled = true; btnClear.disabled = true;
+    }
+
+    function setFile(file) {
+      if (!file || !file.type.startsWith('audio/')) { alert('오디오 파일을 선택하십시오.'); return; }
+      state.file = file; btnStart.disabled = false; btnClear.disabled = false;
+      // read metadata
+      const url = URL.createObjectURL(file);
+      const audio = new Audio();
+      audio.preload = 'metadata';
+      audio.src = url;
+      audio.onloadedmetadata = () => {
+        const dur = isFinite(audio.duration) ? audio.duration : 0;
+        state.audioMeta = { duration: dur };
+        renderFileInfo();
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => { renderFileInfo(); URL.revokeObjectURL(url); };
+    }
+
+    function renderFileInfo() {
+      const f = state.file; if (!f) { fileInfo.classList.add('hidden'); return; }
+      const rows = [];
+      rows.push(kv('파일명', f.name));
+      rows.push(kv('형식', f.type || '알 수 없음'));
+      rows.push(kv('크기', human(f.size)));
+      if (state.audioMeta?.duration) rows.push(kv('재생 길이', timefmt(state.audioMeta.duration)));
+      fileInfo.innerHTML = rows.join('');
+      fileInfo.classList.remove('hidden');
+    }
+
+    function kv(k, v) { return `<div class="kv"><span>${k}</span><code>${v}</code></div>` }
+    function human(bytes) {
+      const u = ['B', 'KB', 'MB', 'GB']; let i = 0, n = bytes; while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+      return `${n.toFixed((i === 0) ? 0 : 1)} ${u[i]}`;
+    }
+    function timefmt(sec) { const m = Math.floor(sec / 60), s = Math.round(sec % 60); return `${m}분 ${s}초`; }
+
+    // ---------- Task Options ----------
+    function setTask(t) { state.task = t; document.getElementById('embed-opts').classList.toggle('hidden', t !== 'embed'); document.getElementById('verify-opts').classList.toggle('hidden', t !== 'verify'); }
+
+    // ---------- Processing Simulation ----------
+    function startProcess() {
+      if (!state.file) { alert('파일을 먼저 선택하십시오.'); return; }
+      navigate('view-loading');
+      simulateProcessing();
+    }
+
+    const loadingMsg = document.getElementById('loading-msg');
+    const bar = document.getElementById('bar');
+
+    function simulateProcessing() {
+      let p = 0; bar.style.width = '0%';
+      const steps = [
+        '오디오 전처리 수행 중입니다.',
+        state.task === 'embed' ? '워터마크 패턴을 삽입하고 있습니다.' : '워터마크 신호를 검출하고 있습니다.',
+        '후처리 및 요약을 생성하고 있습니다.'
+      ];
+      let step = 0; loadingMsg.textContent = steps[0];
+      const intv = setInterval(() => {
+        p += Math.random() * 18 + 7; if (p > 100) p = 100; bar.style.width = p + '%';
+        if (p > (35 + step * 25) && step < steps.length - 1) { step++; loadingMsg.textContent = steps[step]; }
+        if (p >= 100) { clearInterval(intv); setTimeout(() => done(); , 300);
+    }
+      }, 260);
+    }
+
+    function done() {
+      // build pseudo result
+      const f = state.file;
+      const now = new Date();
+      const key = (state.task === 'embed') ? (document.getElementById('key').value || '') : (document.getElementById('vkey').value || '');
+      const robust = !!document.getElementById('robust')?.checked;
+      const strength = Number(document.getElementById('strength')?.value || 6);
+      const conf = (state.task === 'verify') ? pseudoConfidence(f.name + key) : undefined;
+      const token = genToken(f.name + key + now.toISOString());
+
+      const summary = [];
+      summary.push(kv('작업', state.task === 'embed' ? '워터마크 삽입' : '워터마크 검증'));
+      summary.push(kv('파일명', f.name));
+      if (state.task === 'embed') {
+        summary.push(kv('강도', String(strength)));
+        summary.push(kv('견고 모드', robust ? '사용' : '해제'));
+        summary.push(kv('키 해시', hashStr(key)));
+        summary.push(kv('결과', '삽입 완료(데모)'));
+      } else {
+        summary.push(kv('키 제공', key ? '예' : '아니오'));
+        summary.push(kv('검출 신뢰도', (conf * 100).toFixed(1) + '%'));
+        summary.push(kv('판정', conf > 0.6 ? '워터마크 검출' : '검출 실패'));
+      }
+      summary.push(kv('검증 토큰', token));
+
+      const result = {
+        mode: state.task,
+        file: { name: f.name, type: f.type, size: f.size },
+        options: state.task === 'embed' ? { strength, robust, key_hash: hashStr(key) } : { key_provided: !!key },
+        verification: state.task === 'verify' ? { confidence: conf, detected: conf > 0.6 } : null,
+        token,
+        timestamp: now.toISOString()
+      };
+
+      // blob url
+      const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+      if (state.lastResultUrl) URL.revokeObjectURL(state.lastResultUrl);
+      state.lastResultUrl = URL.createObjectURL(blob);
+
+      document.getElementById('result-link').href = state.lastResultUrl;
+      document.getElementById('result-link').download = `adv_result_${Date.now()}.json`;
+
+      const doneTitle = document.getElementById('done-title');
+      doneTitle.textContent = state.task === 'embed' ? '삽입 완료' : '검증 결과';
+      document.getElementById('done-summary').innerHTML = summary.join('');
+      navigate('view-done');
+    }
+
+    function pseudoConfidence(s) {
+      const h = Math.abs(hashStr(s).split('').reduce((a, c) => a + c.charCodeAt(0), 0));
+      return ((h % 40) + 55) / 100; // 0.55 ~ 0.94
+    }
+
+    function genToken(s) {
+      const h = hashStr(s);
+      return btoa(h).replace(/=+$/, '').slice(0, 22);
+    }
+
+    function hashStr(str) {
+      // simple non-crypto hash (demo only)
+      let h = 2166136261 >>> 0; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 16777619) >>> 0; }
+      return ('00000000' + h.toString(16)).slice(-8);
+    }
+
+    // Initialize default view
+    // navigate('view-home'); // (disabled: using multi-page navigation now)
+  </script>
+</body>
+
+</html>

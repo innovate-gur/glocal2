@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>라이브 모드 · Anti-DeepVoice</title>
+    <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+
+<body>
+    <header>
+        <div class="container nav">
+            <a class="brand" href="./index.html" aria-label="홈으로">
+                <div class="logo" aria-hidden="true"></div>
+                <div>Anti-DeepVoice</div>
+            </a>
+            <div class="spacer"></div>
+            <a id="nav-home" href="./index.html">홈</a>
+            <a id="nav-auth" href="./auth.html">로그인/회원가입</a>
+            <a id="nav-upload" href="./upload.html">업로드</a>
+            <a id="nav-live" class="active" href="./live.html">라이브</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="hero">
+            <h1>실시간 마이크 워터마킹·검증 라이브 모드</h1>
+            <p>브라우저 마이크 입력으로 업로드 없이 즉시 체험할 수 있는 데모입니다. 실제 DSP/모델 대신 시뮬레이션 로직으로 UI와 흐름을 검증합니다.</p>
+        </div>
+
+        <div class="grid" style="margin-top:18px">
+            <div class="card">
+                <h2>입력 및 제어</h2>
+                <div class="field">
+                    <label>모드 선택</label>
+                    <div class="row" style="justify-content:center">
+                        <label><input type="radio" name="mode" value="embed" checked> 워터마크 삽입(라이브)</label>
+                        <label><input type="radio" name="mode" value="verify"> 워터마크 검증(라이브)</label>
+                    </div>
+                </div>
+
+                <div id="embed-opts" class="field" style="margin-top:10px">
+                    <label for="live-strength">임베딩 강도</label>
+                    <input id="live-strength" type="range" min="1" max="10" value="6" />
+                    <small class="muted">값이 높을수록 검출은 쉬우나 음질 영향 가능성이 있습니다(데모 시뮬레이션).</small>
+
+                    <label for="live-key">키(Seed)</label>
+                    <input id="live-key" class="input" type="text" placeholder="예: live-demo-key" />
+                </div>
+
+                <div id="verify-opts" class="field hidden" style="margin-top:10px">
+                    <label for="live-vkey">키(선택)</label>
+                    <input id="live-vkey" class="input" type="text" placeholder="모를 경우 비워두십시오" />
+                </div>
+
+                <div class="row" style="justify-content:center; margin-top:12px">
+                    <button id="btn-start" class="btn" type="button">마이크 시작</button>
+                    <button id="btn-stop" class="btn ghost" type="button" disabled>중지</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>실시간 상태</h2>
+                <div class="kvs" id="live-kvs">
+                    <div class="kv"><span>오디오 레벨</span><code><span id="level-db">-∞ dB</span></code></div>
+                    <div class="kv"><span>추정 레이턴시</span><code><span id="latency">—</span></code></div>
+                    <div class="kv"><span>신뢰도(검증)</span><code><span id="confidence">—</span></code></div>
+                    <div class="kv"><span>상태</span><code><span id="status">대기</span></code></div>
+                </div>
+
+                <div style="margin-top:12px">
+                    <div class="progress"><span id="level-bar" style="width:0%"></span></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="container">© 2025 Anti-DeepVoice Demo</footer>
+    <script src="./assets/app.js"></script>
+    <script src="./assets/live.js"></script>
+</body>
+
+</html>

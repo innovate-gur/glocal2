@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>로그인/회원가입 · Anti-DeepVoice</title>
+    <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+
+<body>
+    <header>
+        <div class="container nav">
+            <a class="brand" href="./index.html" aria-label="홈으로">
+                <div class="logo" aria-hidden="true"></div>
+                <div>Anti-DeepVoice</div>
+            </a>
+            <div class="spacer"></div>
+            <a id="nav-home" href="./index.html">홈</a>
+            <a id="nav-auth" class="active" href="./auth.html">로그인/회원가입</a>
+            <a id="nav-upload" href="./upload.html">업로드</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="grid">
+            <div class="card">
+                <h2 id="auth-title">계정</h2>
+                <div class="tabs" role="tablist">
+                    <button class="tab active" id="t-login" onclick="show('login')">로그인</button>
+                    <button class="tab" id="t-sign" onclick="show('sign')">회원가입</button>
+                </div>
+
+                <form id="panel-login" class="field" onsubmit="fakeAuth(event)">
+                    <label for="login-email">이메일</label>
+                    <input id="login-email" class="input" type="email" placeholder="you@example.com" required />
+                    <label for="login-pass">비밀번호</label>
+                    <input id="login-pass" class="input" type="password" placeholder="••••••••" minlength="6"
+                        required />
+                    <div class="row" style="margin-top:6px">
+                        <button class="btn" type="submit">로그인</button>
+                        <a class="btn ghost" href="./index.html">취소</a>
+                    </div>
+                </form>
+
+                <form id="panel-sign" class="field hidden" onsubmit="fakeAuth(event)">
+                    <label for="sign-name">이름</label>
+                    <input id="sign-name" class="input" type="text" placeholder="홍길동" required />
+                    <label for="sign-email">이메일</label>
+                    <input id="sign-email" class="input" type="email" placeholder="you@example.com" required />
+                    <label for="sign-pass">비밀번호</label>
+                    <input id="sign-pass" class="input" type="password" placeholder="최소 6자" minlength="6" required />
+                    <div class="row" style="margin-top:6px">
+                        <button class="btn" type="submit">회원가입</button>
+                        <button class="btn ghost" type="button" onclick="show('login')">로그인으로</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>보안 권고</h2>
+                <p class="muted">본 페이지는 데모입니다. 실제 서비스에서는 OAuth, 2FA, 서명된 세션 토큰을 적용해야 합니다.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="container">© 2025 Anti-DeepVoice Demo</footer>
+    <script src="./assets/app.js"></script>
+    <script>
+        function show(which) {
+            const isLogin = which === 'login';
+            document.getElementById('t-login').classList.toggle('active', isLogin);
+            document.getElementById('t-sign').classList.toggle('active', !isLogin);
+            document.getElementById('panel-login').classList.toggle('hidden', !isLogin);
+            document.getElementById('panel-sign').classList.toggle('hidden', isLogin);
+        }
+        function fakeAuth(e) {
+            e.preventDefault();
+            // 데모: 로그인/가입 후 업로드 페이지로 이동
+            ADV_UTILS.go('./upload.html');
+        }
+    </script>
+</body>
+
+</html>
